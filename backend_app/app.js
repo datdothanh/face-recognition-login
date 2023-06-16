@@ -32,7 +32,7 @@ const corsOptions = {
 };
 app.use(express.static("public"));
 
-app.post("/api/auth/register", cors(corsOptions), async (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   try {
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory);
@@ -97,7 +97,7 @@ app.post("/api/auth/register", cors(corsOptions), async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", cors(corsOptions), async (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password, screenshot, descriptor } = req.body;
 
@@ -207,12 +207,12 @@ app.post("/api/auth/login", cors(corsOptions), async (req, res) => {
   }
 });
 
-app.post("/api/auth/logout", cors(corsOptions), auth, (req, res) => {
+app.post("/api/auth/logout", auth, (req, res) => {
   // TODO: invalidate token
   return res.status(200).send("Logged out successfully!");
 });
 
-app.post("/api/image/get/from/url", cors(corsOptions), (req, res) => {
+app.post("/api/image/get/from/url", (req, res) => {
   try {
     const { url } = req.body;
     if (!url) {
@@ -242,41 +242,36 @@ app.post("/api/image/get/from/url", cors(corsOptions), (req, res) => {
   }
 });
 
-app.post(
-  "/api/image/get/profile/pic",
-  cors(corsOptions),
-  auth,
-  async (req, res) => {
-    try {
-      const { email } = req.body;
+app.post("/api/image/get/profile/pic", auth, async (req, res) => {
+  try {
+    const { email } = req.body;
 
-      if (!email) {
-        return res.status(400).send("Dati mancanti.");
-      }
-
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(409).send("User not found.");
-      }
-
-      const image_path = path.join(__dirname, user.image_src);
-      fs.readFile(image_path, (e, c) => {
-        if (e) {
-          console.log(e);
-          return res.status(500).send(e);
-        } else {
-          const mime = mimetypes.contentType(image_path.split(".")[1]);
-          const data = "data:" + mime + ";base64," + c.toString("base64");
-          return res.status(200).send({ blob: data });
-        }
-      });
-    } catch (e) {
-      return res.status(500).send(e);
+    if (!email) {
+      return res.status(400).send("Dati mancanti.");
     }
-  }
-);
 
-app.post("/api/image/get/matches", cors(corsOptions), (req, res) => {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(409).send("User not found.");
+    }
+
+    const image_path = path.join(__dirname, user.image_src);
+    fs.readFile(image_path, (e, c) => {
+      if (e) {
+        console.log(e);
+        return res.status(500).send(e);
+      } else {
+        const mime = mimetypes.contentType(image_path.split(".")[1]);
+        const data = "data:" + mime + ";base64," + c.toString("base64");
+        return res.status(200).send({ blob: data });
+      }
+    });
+  } catch (e) {
+    return res.status(500).send(e);
+  }
+});
+
+app.post("/api/image/get/matches", (req, res) => {
   try {
     const { target, threshold } = req.body;
 
