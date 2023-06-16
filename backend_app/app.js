@@ -21,7 +21,11 @@ const {
 const path = require("path");
 const directory = "uploads";
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 app.use(express.json({ limit: "5mb" }));
 const corsOptions = {
   origin: FRONTEND_URL,
@@ -97,21 +101,21 @@ app.post("/api/auth/login", cors(corsOptions), async (req, res) => {
   try {
     const { email, password, screenshot, descriptor } = req.body;
 
-    if (!(email && password && screenshot && descriptor)) {
-      return res.status(400).send("Dati mancanti.");
-    }
+    // if (!(email && password && screenshot && descriptor)) {
+    //   return res.status(400).send("Dati mancanti.");
+    // }
 
-    if (
-      !email
-        .toLowerCase()
-        .match(
-          /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-        )
-    ) {
-      return res
-        .status(400)
-        .send("The EMAIL field is not in the standard form.");
-    }
+    // if (
+    //   !email
+    //     .toLowerCase()
+    //     .match(
+    //       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    //     )
+    // ) {
+    //   return res
+    //     .status(400)
+    //     .send("The EMAIL field is not in the standard form.");
+    // }
 
     const users = await User.find({});
     let threshold = 0.5;
@@ -135,15 +139,7 @@ app.post("/api/auth/login", cors(corsOptions), async (req, res) => {
           "It was not possible to associate the IMAGE inserted with the one registered. Insert a new image."
         );
     }
-    if (email !== bestMatchUser.email) {
-      return res.status(400).send("EMAIL or PASSWORD provided are incorrect.");
-    }
-
-    const userByEmail = await User.findOne({ email });
-    if (
-      (await bcrypt.compare(password, bestMatchUser.password)) &&
-      (await bcrypt.compare(password, userByEmail.password))
-    ) {
+    if (Object.keys(bestMatchUser).length !== 0) {
       const token = jwt.sign(
         { user_id: bestMatchUser._id, email },
         process.env.TOKEN_KEY,
@@ -168,9 +164,43 @@ app.post("/api/auth/login", cors(corsOptions), async (req, res) => {
           });
         }
       });
-    } else {
-      return res.status(400).send("EMAIL or PASSWORD provided are incorrect.");
     }
+    // if (email !== bestMatchUser.email) {
+    //   return res.status(400).send("EMAIL or PASSWORD provided are incorrect.");
+    // }
+
+    // const userByEmail = await User.findOne({ email });
+    // if (
+    //   (await bcrypt.compare(password, bestMatchUser.password)) &&
+    //   (await bcrypt.compare(password, userByEmail.password))
+    // ) {
+    //   const token = jwt.sign(
+    //     { user_id: bestMatchUser._id, email },
+    //     process.env.TOKEN_KEY,
+    //     { expiresIn: "2h" }
+    //   );
+    //   const image_path = path.join(__dirname, bestMatchUser.image_src);
+    //   let registerPic = "";
+    //   fs.readFile(image_path, (e, c) => {
+    //     if (e) {
+    //       console.log(e);
+    //       throw "An error occurred with image reading.";
+    //     } else {
+    //       const mime = mimetypes.contentType(image_path.split(".")[1]);
+    //       registerPic = "data:" + mime + ";base64," + c.toString("base64");
+    //       return res.status(200).json({
+    //         name: bestMatchUser.name,
+    //         email: bestMatchUser.email,
+    //         screenshot: bestMatchUser.image_src,
+    //         registerPic,
+    //         loginPic: screenshot,
+    //         token,
+    //       });
+    //     }
+    //   });
+    // } else {
+    //   return res.status(400).send("EMAIL or PASSWORD provided are incorrect.");
+    // }
   } catch (e) {
     console.log(e);
     return res.status(500).send(e);
